@@ -1,0 +1,59 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List
+
+app = FastAPI()
+
+class Customer(BaseModel):
+    username: str
+    email: str
+
+class Product(BaseModel):
+    name: str
+    price: float
+
+class Order(BaseModel):
+    products: List[Product]
+    status: str = "pending"
+
+customers_db = []
+products_db = []
+orders_db = []
+
+def is_username_unique(username):
+    for customer in customers_db:
+        if customer.username == username:
+            return False
+    return True
+
+
+@app.post("/customers/")
+def create_customer(customer: Customer):
+    if not is_username_unique(customer.username):
+        raise HTTPException(status_code=400, detail="Username already exists!")
+    
+    customers_db.append(customer)
+    return {"message": "Customer created successfully"}
+
+
+@app.put("/customers/{customer_id}")
+def edit_customer(customer_id: int, customer: Customer):
+    # Update customer logic
+    customers_db[customer_id] = customer
+    return {"message": "Customer updated successfully"}
+
+
+@app.put("/products/{product_id}")
+def edit_product(product_id: int, product: Product):
+
+    products_db[product_id] = product
+    return {"message": "Product updated successfully"}
+
+@app.post("/orders/{order_id}/checkout")
+def checkout_order(order_id: int):
+    order = orders_db[order_id]
+    if order:
+        order.status = "completed"
+        return {"message": "Order checked out successfully"}
+    else:
+        raise HTTPException(status_code=404, detail="Order not found")
